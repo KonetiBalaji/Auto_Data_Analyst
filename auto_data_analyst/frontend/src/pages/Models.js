@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -27,30 +27,7 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-
-// Mock data
-const mockModels = [
-  {
-    id: 1,
-    name: 'Customer Churn Predictor',
-    type: 'Classification',
-    algorithm: 'XGBoost',
-    accuracy: 0.89,
-    status: 'Active',
-    lastTrained: '2024-02-20',
-    features: 15,
-  },
-  {
-    id: 2,
-    name: 'Sales Forecast',
-    type: 'Regression',
-    algorithm: 'Random Forest',
-    accuracy: 0.92,
-    status: 'Active',
-    lastTrained: '2024-02-19',
-    features: 12,
-  },
-];
+import { modelApi } from '../utils/api';
 
 const columns = [
   { field: 'name', headerName: 'Model Name', width: 200 },
@@ -94,8 +71,63 @@ function Models() {
     algorithm: '',
     dataset: '',
   });
+  const [models, setModels] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleTrainModel = () => {
+  const fetchModels = async () => {
+    setLoading(true);
+    try {
+      const res = await modelApi.list();
+      setModels(res.data);
+    } catch (err) {
+      setError('Failed to load models');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchModels();
+  }, []);
+
+  const handleTrainModel = async (config) => {
+    setLoading(true);
+    try {
+      await modelApi.train(config);
+      fetchModels();
+    } catch (err) {
+      setError('Failed to train model');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEvaluateModel = async (id) => {
+    setLoading(true);
+    try {
+      await modelApi.evaluate(id);
+      fetchModels();
+    } catch (err) {
+      setError('Failed to evaluate model');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteModel = async (id) => {
+    setLoading(true);
+    try {
+      await modelApi.delete(id);
+      fetchModels();
+    } catch (err) {
+      setError('Failed to delete model');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTrainModelDialog = () => {
     setOpenDialog(true);
   };
 
@@ -136,13 +168,13 @@ function Models() {
               <Button
                 variant="contained"
                 startIcon={<TrainIcon />}
-                onClick={handleTrainModel}
+                onClick={handleTrainModelDialog}
               >
                 Train New Model
               </Button>
             </Box>
             <DataGrid
-              rows={mockModels}
+              rows={models}
               columns={columns}
               pageSize={5}
               rowsPerPageOptions={[5]}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -31,6 +31,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { analysisApi } from '../utils/api';
 
 // Mock data
 const correlationData = [
@@ -53,9 +54,40 @@ function Analysis() {
   const [selectedDataset, setSelectedDataset] = useState('');
   const [selectedAnalysis, setSelectedAnalysis] = useState('');
   const [tabValue, setTabValue] = useState(0);
+  const [analyses, setAnalyses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  const fetchAnalyses = async () => {
+    setLoading(true);
+    try {
+      const res = await analysisApi.list();
+      setAnalyses(res.data);
+    } catch (err) {
+      setError('Failed to load analyses');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyses();
+  }, []);
+
+  const handleRunAnalysis = async (datasetId, analysisType) => {
+    setLoading(true);
+    try {
+      await analysisApi.run(datasetId, analysisType);
+      fetchAnalyses();
+    } catch (err) {
+      setError('Failed to run analysis');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

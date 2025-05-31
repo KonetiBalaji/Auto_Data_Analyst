@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -22,6 +22,7 @@ import {
   Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
+import { datasetApi } from '../utils/api';
 
 // Mock data
 const mockDatasets = [
@@ -72,6 +73,37 @@ const columns = [
 function DataUpload() {
   const [openDialog, setOpenDialog] = useState(false);
   const [description, setDescription] = useState('');
+  const [datasets, setDatasets] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchDatasets = async () => {
+    setLoading(true);
+    try {
+      const res = await datasetApi.list();
+      setDatasets(res.data);
+    } catch (err) {
+      setError('Failed to load datasets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDatasets();
+  }, []);
+
+  const handleUpload = async (file, description) => {
+    setLoading(true);
+    try {
+      await datasetApi.upload(file, description);
+      fetchDatasets();
+    } catch (err) {
+      setError('Failed to upload dataset');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Grid,
   Paper,
@@ -19,25 +19,36 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-
-// Mock data
-const modelPerformanceData = [
-  { name: 'Jan', accuracy: 85, precision: 82, recall: 88 },
-  { name: 'Feb', accuracy: 87, precision: 84, recall: 90 },
-  { name: 'Mar', accuracy: 89, precision: 86, recall: 92 },
-  { name: 'Apr', accuracy: 91, precision: 88, recall: 94 },
-  { name: 'May', accuracy: 93, precision: 90, recall: 96 },
-];
-
-const dataProcessingStats = [
-  { name: 'Mon', processed: 1200, failed: 50 },
-  { name: 'Tue', processed: 1500, failed: 30 },
-  { name: 'Wed', processed: 1800, failed: 20 },
-  { name: 'Thu', processed: 1600, failed: 40 },
-  { name: 'Fri', processed: 2000, failed: 25 },
-];
+import { datasetApi, modelApi, analysisApi } from '../utils/api';
 
 function Dashboard() {
+  const [modelPerformanceData, setModelPerformanceData] = useState([]);
+  const [dataProcessingStats, setDataProcessingStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Example: Fetch models and analysis stats
+        const modelsRes = await modelApi.list();
+        const analysisRes = await analysisApi.list();
+        // You can process and format the data as needed for the charts
+        setModelPerformanceData(modelsRes.data || []);
+        setDataProcessingStats(analysisRes.data || []);
+      } catch (err) {
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>

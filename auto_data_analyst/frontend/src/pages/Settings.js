@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import {
   Add as AddIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
+import { settingsApi } from '../utils/api';
 
 function Settings() {
   const [settings, setSettings] = useState({
@@ -39,9 +40,31 @@ function Settings() {
     dataRetention: '30',
     maxFileSize: '100',
   });
+  const [apiKeys, setApiKeys] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [openDialog, setOpenDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const res = await settingsApi.get();
+      setSettings(res.data);
+      // Optionally fetch API keys if endpoint exists
+      // const keysRes = await settingsApi.listApiKeys();
+      // setApiKeys(keysRes.data);
+    } catch (err) {
+      setError('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSettingChange = (setting) => (event) => {
     setSettings({
@@ -57,9 +80,42 @@ function Settings() {
     });
   };
 
-  const handleSaveSettings = () => {
-    // Handle settings save logic here
-    console.log('Settings saved:', settings);
+  const handleSaveSettings = async () => {
+    setLoading(true);
+    try {
+      await settingsApi.update(settings);
+      fetchSettings();
+    } catch (err) {
+      setError('Failed to save settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateApiKey = async (name) => {
+    setLoading(true);
+    try {
+      await settingsApi.createApiKey(name);
+      // Optionally refresh API keys
+      // fetchSettings();
+    } catch (err) {
+      setError('Failed to create API key');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteApiKey = async (id) => {
+    setLoading(true);
+    try {
+      await settingsApi.deleteApiKey(id);
+      // Optionally refresh API keys
+      // fetchSettings();
+    } catch (err) {
+      setError('Failed to delete API key');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

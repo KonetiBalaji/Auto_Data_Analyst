@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
+import { reportApi } from '../utils/api';
 
 // Mock data
 const mockReports = [
@@ -86,6 +87,25 @@ function Reports() {
     format: '',
     description: '',
   });
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const res = await reportApi.list();
+      setReports(res.data);
+    } catch (err) {
+      setError('Failed to load reports');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
   const handleCreateReport = () => {
     setOpenDialog(true);
@@ -101,9 +121,40 @@ function Reports() {
     });
   };
 
-  const handleGenerateReport = () => {
-    // Handle report generation logic here
-    setOpenDialog(false);
+  const handleGenerateReport = async (config) => {
+    setLoading(true);
+    try {
+      await reportApi.generate(config);
+      fetchReports();
+    } catch (err) {
+      setError('Failed to generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async (id) => {
+    setLoading(true);
+    try {
+      const res = await reportApi.download(id);
+      // Handle file download logic here
+    } catch (err) {
+      setError('Failed to download report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteReport = async (id) => {
+    setLoading(true);
+    try {
+      await reportApi.delete(id);
+      fetchReports();
+    } catch (err) {
+      setError('Failed to delete report');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -126,7 +177,7 @@ function Reports() {
               </Button>
             </Box>
             <DataGrid
-              rows={mockReports}
+              rows={reports}
               columns={columns}
               pageSize={5}
               rowsPerPageOptions={[5]}
@@ -143,7 +194,7 @@ function Reports() {
                 Recent Reports
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {mockReports.map((report) => (
+                {reports.map((report) => (
                   <Chip
                     key={report.id}
                     label={report.title}
@@ -243,7 +294,7 @@ function Reports() {
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button
-            onClick={handleGenerateReport}
+            onClick={() => handleGenerateReport(selectedReport)}
             variant="contained"
             disabled={
               !selectedReport.title ||
